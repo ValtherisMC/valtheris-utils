@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { ArrowRight, Search } from 'lucide-react';
 import { hexTemplates } from '@/lib/templates';
@@ -62,7 +61,7 @@ export function HexTemplatesTool() {
                   <CopyButton value={template.start} label="Copy Start" />
                   <CopyButton value={template.end} label="Copy End" />
                 </div>
-                <Link
+                <a
                   href={`/dashboard/hex-generator?start=${encodeURIComponent(
                     template.start,
                   )}&end=${encodeURIComponent(template.end)}`}
@@ -70,7 +69,7 @@ export function HexTemplatesTool() {
                 >
                   Use Template
                   <ArrowRight className="size-4" aria-hidden="true" />
-                </Link>
+                </a>
               </CardContent>
             </Card>
           ))}

@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   BadgeCheck,
@@ -79,7 +78,7 @@ function SidebarContent({ csrfToken }: { csrfToken: string }) {
 
   return (
     <div className="flex h-full flex-col gap-5">
-      <Link href="/dashboard" className="flex items-center gap-3 rounded-lg px-2 py-2">
+      <a href="/dashboard" className="flex items-center gap-3 rounded-lg px-2 py-2">
         <span className="flex size-10 items-center justify-center rounded-lg bg-primary/20 text-primary ring-1 ring-primary/25">
           <Sparkles className="size-5" aria-hidden="true" />
         </span>
@@ -87,7 +86,7 @@ function SidebarContent({ csrfToken }: { csrfToken: string }) {
           <p className="font-semibold">Valtheris</p>
           <p className="text-sm text-muted-foreground">Minecraft utilities</p>
         </div>
-      </Link>
+      </a>
       <nav className="space-y-1">
         {navItems.map((item) => {
           const Icon = item.icon;
@@ -95,7 +94,7 @@ function SidebarContent({ csrfToken }: { csrfToken: string }) {
             pathname === item.href ||
             (item.href !== '/dashboard' && pathname.startsWith(item.href));
           return (
-            <Link
+            <a
               key={item.href}
               href={item.href}
               className={cn(
@@ -105,7 +104,7 @@ function SidebarContent({ csrfToken }: { csrfToken: string }) {
             >
               <Icon className="size-4" aria-hidden="true" />
               {item.label}
-            </Link>
+            </a>
           );
         })}
       </nav>

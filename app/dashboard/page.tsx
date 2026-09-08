@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { Blocks, Palette, Type } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -51,7 +50,7 @@ export default async function DashboardPage() {
         {cards.map((card) => {
           const Icon = card.icon;
           return (
-            <Link key={card.href} href={card.href}>
+            <a key={card.href} href={card.href} aria-label={`Open ${card.title}`}>
               <Card className="h-full border-white/10 bg-card/65 shadow-lg shadow-black/10 transition duration-200 hover:-translate-y-0.5 hover:bg-card">
                 <CardHeader>
                   <div className="mb-3 flex size-11 items-center justify-center rounded-lg bg-primary/15 text-primary">
@@ -63,7 +62,7 @@ export default async function DashboardPage() {
                   {card.description}
                 </CardContent>
               </Card>
-            </Link>
+            </a>
           );
         })}
       </section>

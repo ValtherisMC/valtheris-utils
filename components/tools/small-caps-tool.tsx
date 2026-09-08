@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { ArrowRight, Trash2 } from 'lucide-react';
 import { toSmallCaps } from '@/lib/small-caps';
@@ -89,7 +88,7 @@ export function SmallCapsTool() {
             />
             <div className="flex flex-wrap gap-2">
               <CopyButton value={output} />
-              <Link
+              <a
                 href={`/dashboard/hex-generator?text=${encodeURIComponent(output)}`}
                 aria-disabled={!output}
                 className={buttonVariants({
@@ -98,7 +97,7 @@ export function SmallCapsTool() {
               >
                 Small Caps + Gradient
                 <ArrowRight className="size-4" aria-hidden="true" />
-              </Link>
+              </a>
             </div>
             <p className="text-sm text-muted-foreground">
               {Array.from(output).length} characters
