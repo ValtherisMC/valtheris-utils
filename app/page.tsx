@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { AlertTriangle, LockKeyhole, ShieldCheck } from 'lucide-react';
 import { getCurrentSession } from '@/lib/auth/session';
@@ -41,15 +40,16 @@ export default async function Home() {
               cu permisiunea Administrator pe serverul configurat.
             </p>
             {envStatus.ok ? (
-              <Link
-                href="/api/auth/login"
-                prefetch={false}
-                className={buttonVariants({
-                  className: 'mt-6 h-11 w-full text-base',
-                })}
-              >
-                Login with Discord
-              </Link>
+              <form action="/api/auth/login" method="get" className="mt-6">
+                <button
+                  type="submit"
+                  className={buttonVariants({
+                    className: 'h-11 w-full text-base',
+                  })}
+                >
+                  Login with Discord
+                </button>
+              </form>
             ) : (
               <Alert className="mt-6 border-destructive/35 bg-destructive/10">
                 <AlertTriangle className="size-4" aria-hidden="true" />
