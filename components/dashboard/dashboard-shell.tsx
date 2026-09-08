@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation';
 import {
   BadgeCheck,
   Blocks,
+  Gem,
   Home,
   LogOut,
   Menu,
@@ -29,6 +30,7 @@ const navItems = [
   { href: '/dashboard/hex-generator', label: 'Hex Generator', icon: Palette },
   { href: '/dashboard/hex-templates', label: 'Hex Templates', icon: Blocks },
   { href: '/dashboard/small-caps', label: 'Small Caps', icon: Type },
+  { href: '/dashboard/symbols', label: 'Symbols', icon: Gem },
 ] as const;
 
 export function DashboardShell({

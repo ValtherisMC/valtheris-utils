@@ -1,4 +1,4 @@
-import { Blocks, Palette, Type } from 'lucide-react';
+import { Blocks, Gem, Palette, Type } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { requireAdminSession } from '@/lib/auth/session';
@@ -21,6 +21,12 @@ const cards = [
     title: 'Small Caps',
     description: 'Convert normal text into Minecraft-style small caps.',
     icon: Type,
+  },
+  {
+    href: '/dashboard/symbols',
+    title: 'Symbols',
+    description: 'Copy Minecraft-friendly symbols for ranks and chat.',
+    icon: Gem,
   },
 ] as const;
 
@@ -46,7 +52,7 @@ export default async function DashboardPage() {
         </div>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-3">
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {cards.map((card) => {
           const Icon = card.icon;
           return (

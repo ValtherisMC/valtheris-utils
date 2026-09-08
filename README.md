@@ -155,5 +155,6 @@ Ruleaza apoi Certbot sau solutia ta TLS preferata pentru HTTPS.
 - `lib/auth/*` - sesiuni, cookies, Discord API, rate limiting
 - `lib/gradient.ts` - validare HEX si formate Minecraft
 - `lib/small-caps.ts` - conversie Unicode small caps
+- `lib/symbols.ts` - simboluri grupate pentru Minecraft
 - `lib/templates.ts` - template-uri HEX Valtheris
 - `test/*` - teste pentru utilitarele importante
