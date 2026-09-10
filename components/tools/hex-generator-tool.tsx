@@ -2,8 +2,19 @@
 
 import { useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { ArrowRightLeft, Dices, RotateCcw } from 'lucide-react';
+import type { ComponentType, CSSProperties } from 'react';
 import {
+  ArrowRightLeft,
+  Bold,
+  Dices,
+  Italic,
+  RotateCcw,
+  Shuffle,
+  Strikethrough,
+  Underline,
+} from 'lucide-react';
+import {
+  type MinecraftTextStyle,
   interpolateGradient,
   normalizeHex,
   toAmpersandHex,
@@ -26,11 +37,27 @@ const defaultText = 'VALTHERIS';
 const defaultStart = '#FF7A18';
 const defaultEnd = '#FFB347';
 
+const styleOptions = [
+  { id: 'bold', label: 'Bold', code: '&l', icon: Bold },
+  { id: 'italic', label: 'Italic', code: '&o', icon: Italic },
+  { id: 'underlined', label: 'Underline', code: '&n', icon: Underline },
+  { id: 'strikethrough', label: 'Strike', code: '&m', icon: Strikethrough },
+  { id: 'obfuscated', label: 'Magic', code: '&k', icon: Shuffle },
+] as const satisfies readonly {
+  id: MinecraftTextStyle;
+  label: string;
+  code: string;
+  icon: ComponentType<{ className?: string; 'aria-hidden'?: boolean }>;
+}[];
+
+const styleOrder = styleOptions.map((option) => option.id);
+
 export function HexGeneratorTool() {
   const params = useSearchParams();
   const [text, setText] = useState(params.get('text') ?? defaultText);
   const [start, setStart] = useState(params.get('start') ?? defaultStart);
   const [end, setEnd] = useState(params.get('end') ?? defaultEnd);
+  const [styles, setStyles] = useState<MinecraftTextStyle[]>([]);
 
   const normalizedStart = normalizeHex(start);
   const normalizedEnd = normalizeHex(end);
@@ -43,16 +70,17 @@ export function HexGeneratorTool() {
     () =>
       isValid
         ? {
-            minimessage: toMiniMessage(text, normalizedStart!, normalizedEnd!),
-            precise: toPreciseMiniMessage(text, normalizedStart!, normalizedEnd!),
-            ampersand: toAmpersandHex(text, normalizedStart!, normalizedEnd!),
-            hash: toHashHex(text, normalizedStart!, normalizedEnd!),
-            legacy: toLegacyMinecraft(text, normalizedStart!, normalizedEnd!),
-            ampersandX: toAmpersandXHex(text, normalizedStart!, normalizedEnd!),
+            minimessage: toMiniMessage(text, normalizedStart!, normalizedEnd!, styles),
+            precise: toPreciseMiniMessage(text, normalizedStart!, normalizedEnd!, styles),
+            ampersand: toAmpersandHex(text, normalizedStart!, normalizedEnd!, styles),
+            hash: toHashHex(text, normalizedStart!, normalizedEnd!, styles),
+            legacy: toLegacyMinecraft(text, normalizedStart!, normalizedEnd!, styles),
+            ampersandX: toAmpersandXHex(text, normalizedStart!, normalizedEnd!, styles),
           }
         : null,
-    [text, normalizedStart, normalizedEnd, isValid],
+    [text, normalizedStart, normalizedEnd, styles, isValid],
   );
+  const previewStyle = useMemo(() => makePreviewStyle(styles), [styles]);
 
   useWebMcpTool(
     useMemo(
@@ -67,6 +95,13 @@ export function HexGeneratorTool() {
             text: { type: 'string' },
             startColor: { type: 'string', pattern: '^#?[0-9a-fA-F]{6}$' },
             endColor: { type: 'string', pattern: '^#?[0-9a-fA-F]{6}$' },
+            styles: {
+              type: 'array',
+              items: {
+                type: 'string',
+                enum: styleOrder,
+              },
+            },
           },
           required: ['text', 'startColor', 'endColor'],
           additionalProperties: false,
@@ -82,17 +117,29 @@ export function HexGeneratorTool() {
           setText(value.text);
           setStart(nextStart);
           setEnd(nextEnd);
+          setStyles(value.styles);
           return {
             text: value.text,
             startColor: nextStart,
             endColor: nextEnd,
+            styles: value.styles,
             outputs: {
-              minimessage: toMiniMessage(value.text, nextStart, nextEnd),
-              preciseMiniMessage: toPreciseMiniMessage(value.text, nextStart, nextEnd),
-              ampersandHex: toAmpersandHex(value.text, nextStart, nextEnd),
-              hashHex: toHashHex(value.text, nextStart, nextEnd),
-              legacyMinecraft: toLegacyMinecraft(value.text, nextStart, nextEnd),
-              ampersandX: toAmpersandXHex(value.text, nextStart, nextEnd),
+              minimessage: toMiniMessage(value.text, nextStart, nextEnd, value.styles),
+              preciseMiniMessage: toPreciseMiniMessage(
+                value.text,
+                nextStart,
+                nextEnd,
+                value.styles,
+              ),
+              ampersandHex: toAmpersandHex(value.text, nextStart, nextEnd, value.styles),
+              hashHex: toHashHex(value.text, nextStart, nextEnd, value.styles),
+              legacyMinecraft: toLegacyMinecraft(
+                value.text,
+                nextStart,
+                nextEnd,
+                value.styles,
+              ),
+              ampersandX: toAmpersandXHex(value.text, nextStart, nextEnd, value.styles),
             },
           };
         },
@@ -111,6 +158,16 @@ export function HexGeneratorTool() {
   function randomize() {
     setStart(randomHex());
     setEnd(randomHex());
+  }
+
+  function toggleStyle(style: MinecraftTextStyle) {
+    setStyles((current) =>
+      current.includes(style)
+        ? current.filter((item) => item !== style)
+        : [...current, style].sort(
+            (left, right) => styleOrder.indexOf(left) - styleOrder.indexOf(right),
+          ),
+    );
   }
 
   return (
@@ -156,6 +213,32 @@ export function HexGeneratorTool() {
               onBlur={() => normalizeOnBlur('end')}
             />
 
+            <div className="space-y-2">
+              <Label>Formatting</Label>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {styleOptions.map((option) => {
+                  const Icon = option.icon;
+                  const active = styles.includes(option.id);
+                  return (
+                    <Button
+                      key={option.id}
+                      type="button"
+                      variant={active ? 'secondary' : 'outline'}
+                      aria-pressed={active}
+                      onClick={() => toggleStyle(option.id)}
+                      className="justify-start"
+                    >
+                      <Icon className="size-4" aria-hidden="true" />
+                      <span>{option.label}</span>
+                      <span className="ml-auto font-mono text-xs text-muted-foreground">
+                        {option.code}
+                      </span>
+                    </Button>
+                  );
+                })}
+              </div>
+            </div>
+
             <div className="grid grid-cols-3 gap-2">
               <Button
                 type="button"
@@ -179,6 +262,7 @@ export function HexGeneratorTool() {
                   setText(defaultText);
                   setStart(defaultStart);
                   setEnd(defaultEnd);
+                  setStyles([]);
                 }}
               >
                 <RotateCcw className="size-4" aria-hidden="true" />
@@ -198,7 +282,10 @@ export function HexGeneratorTool() {
                 <div className="min-h-28 rounded-lg border border-white/10 bg-background/55 p-5 font-mono text-3xl font-semibold leading-relaxed">
                   {gradient.length > 0 ? (
                     gradient.map((item, index) => (
-                      <span key={`${item.char}-${index}`} style={{ color: item.color }}>
+                      <span
+                        key={`${item.char}-${index}`}
+                        style={{ ...previewStyle, color: item.color }}
+                      >
                         {item.char}
                       </span>
                     ))
@@ -320,6 +407,7 @@ function parseGradientInput(input: unknown): {
   text: string;
   startColor: string;
   endColor: string;
+  styles: MinecraftTextStyle[];
 } {
   if (!input || typeof input !== 'object') {
     throw new Error('Input must be an object.');
@@ -336,5 +424,26 @@ function parseGradientInput(input: unknown): {
     text: value.text,
     startColor: value.startColor,
     endColor: value.endColor,
+    styles: parseStyles(value.styles),
+  };
+}
+
+function parseStyles(input: unknown): MinecraftTextStyle[] {
+  if (!Array.isArray(input)) return [];
+
+  return styleOrder.filter((style) => input.includes(style));
+}
+
+function makePreviewStyle(styles: MinecraftTextStyle[]): CSSProperties {
+  const decorations = [
+    styles.includes('underlined') ? 'underline' : '',
+    styles.includes('strikethrough') ? 'line-through' : '',
+  ].filter(Boolean);
+
+  return {
+    fontWeight: styles.includes('bold') ? 800 : 600,
+    fontStyle: styles.includes('italic') ? 'italic' : 'normal',
+    textDecoration: decorations.join(' ') || 'none',
+    filter: styles.includes('obfuscated') ? 'blur(0.4px)' : undefined,
   };
 }

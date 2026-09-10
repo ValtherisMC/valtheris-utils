@@ -9,7 +9,30 @@ export type GradientCharacter = {
   color: string;
 };
 
+export type MinecraftTextStyle =
+  | 'bold'
+  | 'italic'
+  | 'underlined'
+  | 'strikethrough'
+  | 'obfuscated';
+
 const HEX_PATTERN = /^#?[0-9a-fA-F]{6}$/;
+
+const styleCodes: Record<MinecraftTextStyle, string> = {
+  bold: '&l',
+  italic: '&o',
+  underlined: '&n',
+  strikethrough: '&m',
+  obfuscated: '&k',
+};
+
+const miniMessageStyleTags: Record<MinecraftTextStyle, string> = {
+  bold: 'bold',
+  italic: 'italic',
+  underlined: 'underlined',
+  strikethrough: 'strikethrough',
+  obfuscated: 'obfuscated',
+};
 
 const legacyColors = [
   { code: '&0', color: '#000000' },
@@ -72,36 +95,54 @@ export function interpolateGradient(
   });
 }
 
-export function toMiniMessage(text: string, startHex: string, endHex: string): string {
+export function toMiniMessage(
+  text: string,
+  startHex: string,
+  endHex: string,
+  styles: MinecraftTextStyle[] = [],
+): string {
   const start = normalizeHex(startHex);
   const end = normalizeHex(endHex);
   if (!start || !end || text.length === 0) return '';
-  return `<gradient:${start}:${end}>${escapeMiniMessageText(text)}</gradient>`;
+  return wrapMiniMessageStyles(
+    `<gradient:${start}:${end}>${escapeMiniMessageText(text)}</gradient>`,
+    styles,
+  );
 }
 
 export function toPreciseMiniMessage(
   text: string,
   startHex: string,
   endHex: string,
+  styles: MinecraftTextStyle[] = [],
 ): string {
-  return interpolateGradient(text, startHex, endHex)
+  const output = interpolateGradient(text, startHex, endHex)
     .map(({ char, color }) => `<${color}>${escapeMiniMessageText(char)}`)
     .join('');
+  return wrapMiniMessageStyles(output, styles);
 }
 
 export function toAmpersandHex(
   text: string,
   startHex: string,
   endHex: string,
+  styles: MinecraftTextStyle[] = [],
 ): string {
+  const styleSuffix = toFormattingCodes(styles);
   return interpolateGradient(text, startHex, endHex)
-    .map(({ char, color }) => `&${color}${char}`)
+    .map(({ char, color }) => `&${color}${styleSuffix}${char}`)
     .join('');
 }
 
-export function toHashHex(text: string, startHex: string, endHex: string): string {
+export function toHashHex(
+  text: string,
+  startHex: string,
+  endHex: string,
+  styles: MinecraftTextStyle[] = [],
+): string {
+  const styleSuffix = toFormattingCodes(styles);
   return interpolateGradient(text, startHex, endHex)
-    .map(({ char, color }) => `${color}${char}`)
+    .map(({ char, color }) => `${color}${styleSuffix}${char}`)
     .join('');
 }
 
@@ -109,9 +150,11 @@ export function toLegacyMinecraft(
   text: string,
   startHex: string,
   endHex: string,
+  styles: MinecraftTextStyle[] = [],
 ): string {
+  const styleSuffix = toFormattingCodes(styles);
   return interpolateGradient(text, startHex, endHex)
-    .map(({ char, color }) => `${nearestLegacyColor(color).code}${char}`)
+    .map(({ char, color }) => `${nearestLegacyColor(color).code}${styleSuffix}${char}`)
     .join('');
 }
 
@@ -119,9 +162,11 @@ export function toAmpersandXHex(
   text: string,
   startHex: string,
   endHex: string,
+  styles: MinecraftTextStyle[] = [],
 ): string {
+  const styleSuffix = toFormattingCodes(styles);
   return interpolateGradient(text, startHex, endHex)
-    .map(({ char, color }) => `${toAmpersandXColor(color)}${char}`)
+    .map(({ char, color }) => `${toAmpersandXColor(color)}${styleSuffix}${char}`)
     .join('');
 }
 
@@ -173,4 +218,25 @@ function colorDistance(a: Rgb, b: Rgb): number {
 
 function escapeMiniMessageText(text: string): string {
   return text.replaceAll('\\', '\\\\').replaceAll('<', '\\<');
+}
+
+function toFormattingCodes(styles: MinecraftTextStyle[]): string {
+  return styles.map((style) => styleCodes[style]).join('');
+}
+
+function wrapMiniMessageStyles(
+  output: string,
+  styles: MinecraftTextStyle[],
+): string {
+  if (!output || styles.length === 0) return output;
+
+  const opening = styles
+    .map((style) => `<${miniMessageStyleTags[style]}>`)
+    .join('');
+  const closing = [...styles]
+    .reverse()
+    .map((style) => `</${miniMessageStyleTags[style]}>`)
+    .join('');
+
+  return `${opening}${output}${closing}`;
 }

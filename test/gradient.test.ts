@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  type MinecraftTextStyle,
   interpolateGradient,
   isValidHex,
   nearestLegacyColor,
@@ -45,6 +46,19 @@ void test('generates MiniMessage and HEX output formats', () => {
   assert.equal(toHashHex('AB', '#000000', '#FFFFFF'), '#000000A#FFFFFFB');
   assert.equal(toAmpersandXColor('#FF7A18'), '&x&F&F&7&A&1&8');
   assert.equal(toAmpersandXHex('A', '#FF7A18', '#FFB347'), '&x&F&F&7&A&1&8A');
+});
+
+void test('applies Minecraft formatting styles to generated output', () => {
+  const styles: MinecraftTextStyle[] = ['bold', 'italic', 'underlined'];
+
+  assert.equal(
+    toMiniMessage('A', '#FF7A18', '#FFB347', styles),
+    '<bold><italic><underlined><gradient:#FF7A18:#FFB347>A</gradient></underlined></italic></bold>',
+  );
+  assert.equal(toAmpersandHex('A', '#FF7A18', '#FFB347', styles), '&#FF7A18&l&o&nA');
+  assert.equal(toHashHex('A', '#FF7A18', '#FFB347', styles), '#FF7A18&l&o&nA');
+  assert.equal(toLegacyMinecraft('A', '#FFFFFF', '#FFFFFF', styles), '&f&l&o&nA');
+  assert.equal(toAmpersandXHex('A', '#FF7A18', '#FFB347', styles), '&x&F&F&7&A&1&8&l&o&nA');
 });
 
 void test('maps gradients to nearest legacy Minecraft colors', () => {
