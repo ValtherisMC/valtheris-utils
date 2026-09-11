@@ -12,6 +12,7 @@ import {
   toHashHex,
   toLegacyMinecraft,
   toMiniMessage,
+  toSectionXColor,
 } from '../lib/gradient.ts';
 
 void test('validates and normalizes HEX colors', () => {
@@ -45,6 +46,7 @@ void test('generates MiniMessage and HEX output formats', () => {
   assert.equal(toAmpersandHex('AB', '#000000', '#FFFFFF'), '&#000000A&#FFFFFFB');
   assert.equal(toHashHex('AB', '#000000', '#FFFFFF'), '#000000A#FFFFFFB');
   assert.equal(toAmpersandXColor('#FF7A18'), '&x&F&F&7&A&1&8');
+  assert.equal(toSectionXColor('#FF7A18'), '§x§f§f§7§a§1§8');
   assert.equal(toAmpersandXHex('A', '#FF7A18', '#FFB347'), '&x&F&F&7&A&1&8A');
 });
 
@@ -57,13 +59,19 @@ void test('applies Minecraft formatting styles to generated output', () => {
   );
   assert.equal(toAmpersandHex('A', '#FF7A18', '#FFB347', styles), '&#FF7A18&l&o&nA');
   assert.equal(toHashHex('A', '#FF7A18', '#FFB347', styles), '#FF7A18&l&o&nA');
-  assert.equal(toLegacyMinecraft('A', '#FFFFFF', '#FFFFFF', styles), '§f§l§o§nA');
+  assert.equal(
+    toLegacyMinecraft('A', '#FFFFFF', '#FFFFFF', styles),
+    '§x§f§f§f§f§f§f§l§o§nA',
+  );
   assert.equal(toAmpersandXHex('A', '#FF7A18', '#FFB347', styles), '&x&F&F&7&A&1&8&l&o&nA');
 });
 
 void test('maps gradients to nearest legacy Minecraft colors', () => {
   assert.deepEqual(nearestLegacyColor('#FFFFFF'), { code: 'f', color: '#FFFFFF' });
-  assert.equal(toLegacyMinecraft('A!', '#FFFFFF', '#000000'), '§fA§0!');
+  assert.equal(
+    toLegacyMinecraft('A!', '#FFFFFF', '#000000'),
+    '§x§f§f§f§f§f§fA§x§0§0§0§0§0§0!',
+  );
 });
 
 void test('returns empty output for invalid colors', () => {

@@ -196,7 +196,7 @@ export function HexGeneratorTool({ storageUserId }: { storageUserId: string }) {
     if (!normalizedStart || !normalizedEnd) return;
     const trimmedName = saveName.trim();
     const gradientName =
-      trimmedName || `${text.trim().slice(0, 24) || 'Gradient'} ${savedGradients.length + 1}`;
+      trimmedName || `${text.trim() || 'Gradient'} ${savedGradients.length + 1}`;
     const nextGradient: SavedGradient = {
       id: crypto.randomUUID(),
       name: gradientName,
@@ -207,7 +207,7 @@ export function HexGeneratorTool({ storageUserId }: { storageUserId: string }) {
       createdAt: Date.now(),
     };
 
-    setSavedGradients((current) => [nextGradient, ...current].slice(0, 24));
+    setSavedGradients((current) => [nextGradient, ...current]);
     setSaveName('');
   }
 
@@ -319,12 +319,7 @@ export function HexGeneratorTool({ storageUserId }: { storageUserId: string }) {
             </div>
 
             <div className="space-y-3 rounded-lg border border-white/10 bg-background/35 p-3">
-              <div className="flex items-center justify-between gap-3">
-                <Label htmlFor="save-gradient-name">Saved gradients</Label>
-                <span className="text-xs text-muted-foreground">
-                  {savedGradients.length}/24
-                </span>
-              </div>
+              <Label htmlFor="save-gradient-name">Saved gradients</Label>
               <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
                 <Input
                   id="save-gradient-name"

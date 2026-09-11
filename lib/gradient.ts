@@ -154,7 +154,7 @@ export function toLegacyMinecraft(
 ): string {
   const styleSuffix = toFormattingCodes(styles, '§');
   return interpolateGradient(text, startHex, endHex)
-    .map(({ char, color }) => `§${nearestLegacyColor(color).code}${styleSuffix}${char}`)
+    .map(({ char, color }) => `${toSectionXColor(color)}${styleSuffix}${char}`)
     .join('');
 }
 
@@ -175,6 +175,14 @@ export function toAmpersandXColor(hex: string): string {
   if (!normalized) return '';
   return `&x${Array.from(normalized.slice(1))
     .map((char) => `&${char}`)
+    .join('')}`;
+}
+
+export function toSectionXColor(hex: string): string {
+  const normalized = normalizeHex(hex);
+  if (!normalized) return '';
+  return `§x${Array.from(normalized.slice(1).toLowerCase())
+    .map((char) => `§${char}`)
     .join('')}`;
 }
 
