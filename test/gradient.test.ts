@@ -57,13 +57,13 @@ void test('applies Minecraft formatting styles to generated output', () => {
   );
   assert.equal(toAmpersandHex('A', '#FF7A18', '#FFB347', styles), '&#FF7A18&l&o&nA');
   assert.equal(toHashHex('A', '#FF7A18', '#FFB347', styles), '#FF7A18&l&o&nA');
-  assert.equal(toLegacyMinecraft('A', '#FFFFFF', '#FFFFFF', styles), '&f&l&o&nA');
+  assert.equal(toLegacyMinecraft('A', '#FFFFFF', '#FFFFFF', styles), '§f§l§o§nA');
   assert.equal(toAmpersandXHex('A', '#FF7A18', '#FFB347', styles), '&x&F&F&7&A&1&8&l&o&nA');
 });
 
 void test('maps gradients to nearest legacy Minecraft colors', () => {
-  assert.deepEqual(nearestLegacyColor('#FFFFFF'), { code: '&f', color: '#FFFFFF' });
-  assert.equal(toLegacyMinecraft('A!', '#FFFFFF', '#000000'), '&fA&0!');
+  assert.deepEqual(nearestLegacyColor('#FFFFFF'), { code: 'f', color: '#FFFFFF' });
+  assert.equal(toLegacyMinecraft('A!', '#FFFFFF', '#000000'), '§fA§0!');
 });
 
 void test('returns empty output for invalid colors', () => {

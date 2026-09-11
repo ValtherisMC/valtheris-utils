@@ -19,11 +19,11 @@ export type MinecraftTextStyle =
 const HEX_PATTERN = /^#?[0-9a-fA-F]{6}$/;
 
 const styleCodes: Record<MinecraftTextStyle, string> = {
-  bold: '&l',
-  italic: '&o',
-  underlined: '&n',
-  strikethrough: '&m',
-  obfuscated: '&k',
+  bold: 'l',
+  italic: 'o',
+  underlined: 'n',
+  strikethrough: 'm',
+  obfuscated: 'k',
 };
 
 const miniMessageStyleTags: Record<MinecraftTextStyle, string> = {
@@ -35,22 +35,22 @@ const miniMessageStyleTags: Record<MinecraftTextStyle, string> = {
 };
 
 const legacyColors = [
-  { code: '&0', color: '#000000' },
-  { code: '&1', color: '#0000AA' },
-  { code: '&2', color: '#00AA00' },
-  { code: '&3', color: '#00AAAA' },
-  { code: '&4', color: '#AA0000' },
-  { code: '&5', color: '#AA00AA' },
-  { code: '&6', color: '#FFAA00' },
-  { code: '&7', color: '#AAAAAA' },
-  { code: '&8', color: '#555555' },
-  { code: '&9', color: '#5555FF' },
-  { code: '&a', color: '#55FF55' },
-  { code: '&b', color: '#55FFFF' },
-  { code: '&c', color: '#FF5555' },
-  { code: '&d', color: '#FF55FF' },
-  { code: '&e', color: '#FFFF55' },
-  { code: '&f', color: '#FFFFFF' },
+  { code: '0', color: '#000000' },
+  { code: '1', color: '#0000AA' },
+  { code: '2', color: '#00AA00' },
+  { code: '3', color: '#00AAAA' },
+  { code: '4', color: '#AA0000' },
+  { code: '5', color: '#AA00AA' },
+  { code: '6', color: '#FFAA00' },
+  { code: '7', color: '#AAAAAA' },
+  { code: '8', color: '#555555' },
+  { code: '9', color: '#5555FF' },
+  { code: 'a', color: '#55FF55' },
+  { code: 'b', color: '#55FFFF' },
+  { code: 'c', color: '#FF5555' },
+  { code: 'd', color: '#FF55FF' },
+  { code: 'e', color: '#FFFF55' },
+  { code: 'f', color: '#FFFFFF' },
 ] as const;
 
 export function isValidHex(value: string): boolean {
@@ -128,7 +128,7 @@ export function toAmpersandHex(
   endHex: string,
   styles: MinecraftTextStyle[] = [],
 ): string {
-  const styleSuffix = toFormattingCodes(styles);
+  const styleSuffix = toFormattingCodes(styles, '&');
   return interpolateGradient(text, startHex, endHex)
     .map(({ char, color }) => `&${color}${styleSuffix}${char}`)
     .join('');
@@ -140,7 +140,7 @@ export function toHashHex(
   endHex: string,
   styles: MinecraftTextStyle[] = [],
 ): string {
-  const styleSuffix = toFormattingCodes(styles);
+  const styleSuffix = toFormattingCodes(styles, '&');
   return interpolateGradient(text, startHex, endHex)
     .map(({ char, color }) => `${color}${styleSuffix}${char}`)
     .join('');
@@ -152,9 +152,9 @@ export function toLegacyMinecraft(
   endHex: string,
   styles: MinecraftTextStyle[] = [],
 ): string {
-  const styleSuffix = toFormattingCodes(styles);
+  const styleSuffix = toFormattingCodes(styles, '§');
   return interpolateGradient(text, startHex, endHex)
-    .map(({ char, color }) => `${nearestLegacyColor(color).code}${styleSuffix}${char}`)
+    .map(({ char, color }) => `§${nearestLegacyColor(color).code}${styleSuffix}${char}`)
     .join('');
 }
 
@@ -164,7 +164,7 @@ export function toAmpersandXHex(
   endHex: string,
   styles: MinecraftTextStyle[] = [],
 ): string {
-  const styleSuffix = toFormattingCodes(styles);
+  const styleSuffix = toFormattingCodes(styles, '&');
   return interpolateGradient(text, startHex, endHex)
     .map(({ char, color }) => `${toAmpersandXColor(color)}${styleSuffix}${char}`)
     .join('');
@@ -220,8 +220,8 @@ function escapeMiniMessageText(text: string): string {
   return text.replaceAll('\\', '\\\\').replaceAll('<', '\\<');
 }
 
-function toFormattingCodes(styles: MinecraftTextStyle[]): string {
-  return styles.map((style) => styleCodes[style]).join('');
+function toFormattingCodes(styles: MinecraftTextStyle[], prefix: '&' | '§'): string {
+  return styles.map((style) => `${prefix}${styleCodes[style]}`).join('');
 }
 
 function wrapMiniMessageStyles(

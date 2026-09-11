@@ -1,17 +1,22 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState, useSyncExternalStore } from 'react';
 import { useSearchParams } from 'next/navigation';
 import type { ComponentType, CSSProperties } from 'react';
 import {
   ArrowRightLeft,
   Bold,
+  BookmarkPlus,
+  Check,
+  Clock,
   Dices,
+  FolderOpen,
   Italic,
   RotateCcw,
   Shuffle,
   Strikethrough,
   Underline,
+  Trash2,
 } from 'lucide-react';
 import {
   type MinecraftTextStyle,
@@ -36,6 +41,20 @@ import { useWebMcpTool } from './webmcp';
 const defaultText = 'VALTHERIS';
 const defaultStart = '#FF7A18';
 const defaultEnd = '#FFB347';
+const storagePrefix = 'valtheris:saved-gradients';
+const savedGradientEvent = 'valtheris:saved-gradients-updated';
+const emptySavedGradients: SavedGradient[] = [];
+const savedGradientCache = new Map<string, { raw: string | null; value: SavedGradient[] }>();
+
+type SavedGradient = {
+  id: string;
+  name: string;
+  text: string;
+  start: string;
+  end: string;
+  styles: MinecraftTextStyle[];
+  createdAt: number;
+};
 
 const styleOptions = [
   { id: 'bold', label: 'Bold', code: '&l', icon: Bold },
@@ -52,12 +71,15 @@ const styleOptions = [
 
 const styleOrder = styleOptions.map((option) => option.id);
 
-export function HexGeneratorTool() {
+export function HexGeneratorTool({ storageUserId }: { storageUserId: string }) {
   const params = useSearchParams();
   const [text, setText] = useState(params.get('text') ?? defaultText);
   const [start, setStart] = useState(params.get('start') ?? defaultStart);
   const [end, setEnd] = useState(params.get('end') ?? defaultEnd);
   const [styles, setStyles] = useState<MinecraftTextStyle[]>([]);
+  const [saveName, setSaveName] = useState('');
+  const storageKey = `${storagePrefix}:${storageUserId}`;
+  const [savedGradients, setSavedGradients] = useSavedGradients(storageKey);
 
   const normalizedStart = normalizeHex(start);
   const normalizedEnd = normalizeHex(end);
@@ -170,6 +192,32 @@ export function HexGeneratorTool() {
     );
   }
 
+  function saveCurrentGradient() {
+    if (!normalizedStart || !normalizedEnd) return;
+    const trimmedName = saveName.trim();
+    const gradientName =
+      trimmedName || `${text.trim().slice(0, 24) || 'Gradient'} ${savedGradients.length + 1}`;
+    const nextGradient: SavedGradient = {
+      id: crypto.randomUUID(),
+      name: gradientName,
+      text,
+      start: normalizedStart,
+      end: normalizedEnd,
+      styles,
+      createdAt: Date.now(),
+    };
+
+    setSavedGradients((current) => [nextGradient, ...current].slice(0, 24));
+    setSaveName('');
+  }
+
+  function loadSavedGradient(saved: SavedGradient) {
+    setText(saved.text);
+    setStart(saved.start);
+    setEnd(saved.end);
+    setStyles(saved.styles);
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -214,7 +262,7 @@ export function HexGeneratorTool() {
             />
 
             <div className="space-y-2">
-              <Label>Formatting</Label>
+              <p className="text-sm font-medium">Formatting</p>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {styleOptions.map((option) => {
                   const Icon = option.icon;
@@ -268,6 +316,32 @@ export function HexGeneratorTool() {
                 <RotateCcw className="size-4" aria-hidden="true" />
                 Reset
               </Button>
+            </div>
+
+            <div className="space-y-3 rounded-lg border border-white/10 bg-background/35 p-3">
+              <div className="flex items-center justify-between gap-3">
+                <Label htmlFor="save-gradient-name">Saved gradients</Label>
+                <span className="text-xs text-muted-foreground">
+                  {savedGradients.length}/24
+                </span>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+                <Input
+                  id="save-gradient-name"
+                  value={saveName}
+                  onChange={(event) => setSaveName(event.target.value)}
+                  className="bg-background/55"
+                  placeholder="Gradient name"
+                />
+                <Button
+                  type="button"
+                  onClick={saveCurrentGradient}
+                  disabled={!isValid || text.length === 0}
+                >
+                  <BookmarkPlus className="size-4" aria-hidden="true" />
+                  Save
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -326,10 +400,179 @@ export function HexGeneratorTool() {
               </Tabs>
             </CardContent>
           </Card>
+
+          <SavedGradientsCard
+            gradients={savedGradients}
+            onLoad={loadSavedGradient}
+            onDelete={(id) =>
+              setSavedGradients((current) =>
+                current.filter((gradient) => gradient.id !== id),
+              )
+            }
+          />
         </div>
       </div>
     </div>
   );
+}
+
+function SavedGradientsCard({
+  gradients,
+  onLoad,
+  onDelete,
+}: {
+  gradients: SavedGradient[];
+  onLoad: (gradient: SavedGradient) => void;
+  onDelete: (id: string) => void;
+}) {
+  return (
+    <Card className="border-white/10 bg-card/70 shadow-xl shadow-black/15">
+      <CardHeader>
+        <CardTitle>Saved gradients</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {gradients.length > 0 ? (
+          <div className="grid gap-3 lg:grid-cols-2">
+            {gradients.map((gradient) => (
+              <div
+                key={gradient.id}
+                className="rounded-lg border border-white/10 bg-background/45 p-3"
+              >
+                <div
+                  className="mb-3 h-2 rounded-full"
+                  style={{
+                    background: `linear-gradient(90deg, ${gradient.start}, ${gradient.end})`,
+                  }}
+                />
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium">{gradient.name}</p>
+                    <p className="mt-1 truncate font-mono text-xs text-muted-foreground">
+                      {gradient.start} -&gt; {gradient.end}
+                    </p>
+                    <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+                      <Clock className="size-3" aria-hidden="true" />
+                      {new Date(gradient.createdAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 gap-1">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label={`Load ${gradient.name}`}
+                      onClick={() => onLoad(gradient)}
+                    >
+                      <FolderOpen className="size-4" aria-hidden="true" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label={`Delete ${gradient.name}`}
+                      onClick={() => onDelete(gradient.id)}
+                    >
+                      <Trash2 className="size-4" aria-hidden="true" />
+                    </Button>
+                  </div>
+                </div>
+                {gradient.styles.length > 0 ? (
+                  <div className="mt-3 flex flex-wrap gap-1">
+                    {gradient.styles.map((style) => (
+                      <span
+                        key={style}
+                        className="inline-flex items-center gap-1 rounded-md border border-white/10 bg-white/5 px-2 py-1 text-xs text-muted-foreground"
+                      >
+                        <Check className="size-3" aria-hidden="true" />
+                        {styleLabel(style)}
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-lg border border-white/10 bg-background/45 p-6 text-center text-sm text-muted-foreground">
+            No saved gradients yet.
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function useSavedGradients(
+  storageKey: string,
+): [
+  SavedGradient[],
+  (next: SavedGradient[] | ((current: SavedGradient[]) => SavedGradient[])) => void,
+] {
+  const subscribe = useCallback(
+    (onStoreChange: () => void) => {
+      if (typeof window === 'undefined') return () => {};
+
+      function handleStorage(event: StorageEvent) {
+        if (event.key === storageKey) onStoreChange();
+      }
+
+      function handleLocalUpdate(event: Event) {
+        if ((event as CustomEvent<string>).detail === storageKey) onStoreChange();
+      }
+
+      window.addEventListener('storage', handleStorage);
+      window.addEventListener(savedGradientEvent, handleLocalUpdate);
+
+      return () => {
+        window.removeEventListener('storage', handleStorage);
+        window.removeEventListener(savedGradientEvent, handleLocalUpdate);
+      };
+    },
+    [storageKey],
+  );
+
+  const getSnapshot = useCallback(() => readSavedGradients(storageKey), [storageKey]);
+  const getServerSnapshot = useCallback(() => [] as SavedGradient[], []);
+  const gradients = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+
+  const setGradients = useCallback(
+    (next: SavedGradient[] | ((current: SavedGradient[]) => SavedGradient[])) => {
+      const current = readSavedGradients(storageKey);
+      const nextGradients = typeof next === 'function' ? next(current) : next;
+      writeSavedGradients(storageKey, nextGradients);
+    },
+    [storageKey],
+  );
+
+  return [gradients, setGradients];
+}
+
+function readSavedGradients(storageKey: string): SavedGradient[] {
+  if (typeof window === 'undefined') return emptySavedGradients;
+
+  try {
+    const raw = window.localStorage.getItem(storageKey);
+    const cached = savedGradientCache.get(storageKey);
+    if (cached?.raw === raw) return cached.value;
+
+    const parsed = raw ? (JSON.parse(raw) as SavedGradient[]) : [];
+    const value = parsed.filter(isSavedGradient);
+    savedGradientCache.set(storageKey, { raw, value });
+    return value;
+  } catch {
+    return emptySavedGradients;
+  }
+}
+
+function writeSavedGradients(storageKey: string, gradients: SavedGradient[]) {
+  try {
+    const raw = JSON.stringify(gradients);
+    savedGradientCache.set(storageKey, { raw, value: gradients });
+    window.localStorage.setItem(storageKey, raw);
+    window.dispatchEvent(new CustomEvent(savedGradientEvent, { detail: storageKey }));
+  } catch {
+    // Local storage may be blocked; the generator still works without saved presets.
+  }
 }
 
 function ColorField({
@@ -432,6 +675,30 @@ function parseStyles(input: unknown): MinecraftTextStyle[] {
   if (!Array.isArray(input)) return [];
 
   return styleOrder.filter((style) => input.includes(style));
+}
+
+function isSavedGradient(value: unknown): value is SavedGradient {
+  if (!value || typeof value !== 'object') return false;
+  const gradient = value as Partial<SavedGradient>;
+
+  return (
+    typeof gradient.id === 'string' &&
+    typeof gradient.name === 'string' &&
+    typeof gradient.text === 'string' &&
+    typeof gradient.start === 'string' &&
+    typeof gradient.end === 'string' &&
+    normalizeHex(gradient.start) !== null &&
+    normalizeHex(gradient.end) !== null &&
+    Array.isArray(gradient.styles) &&
+    gradient.styles.every((style) =>
+      styleOrder.includes(style as MinecraftTextStyle),
+    ) &&
+    typeof gradient.createdAt === 'number'
+  );
+}
+
+function styleLabel(style: MinecraftTextStyle): string {
+  return styleOptions.find((option) => option.id === style)?.label ?? style;
 }
 
 function makePreviewStyle(styles: MinecraftTextStyle[]): CSSProperties {
